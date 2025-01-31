@@ -1,0 +1,60 @@
+name: Step 2, JavaScript Function
+
+# This step triggers after push to skills.js
+# This workflow updates from step 2 to step 3.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "skills.js"
+    branches:
+      - main
+
+permissions:
+  # Need `contents: read` to checkout the repository.
+  # Need `contents: write` to update the step metadata.
+  contents: write
+
+jobs:
+  get_current_step:
+    name: Check current step number
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - id: get_step
+        run: echo "current_step=$(cat ./.github/steps/-step.txt)" >> $GITHUB_OUTPUT
+    outputs:
+      current_step: ${{ steps.get_step.outputs.current_step }}
+
+  on_javascript_function:
+    name: On JavaScript Function Creation
+    needs: get_current_step
+
+    # We will only run this action when:
+    # 1. This repository isn't the template repository.
+    # 2. The current step is 2
+    if: ${{ !github.event.repository.is_template && needs.get_current_step.outputs.current_step == 2 }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Verify the learner added the function
+      - name: Check skills.js
+        uses: skills/action-check-file@v1
+        with:
+          file: "skills.js"
+          search: "function calculateNumbers"
+
+      # Update to the next step
+      - name: Update to step 3
+        uses: skills/action-update-step@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          from_step: 2
+          to_step: 3

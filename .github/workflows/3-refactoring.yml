@@ -1,0 +1,60 @@
+name: Step 3, Copilot Hub Suggestions
+
+# This step triggers after push to member.js
+# This workflow updates from step 3 to step 4.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "member.js"
+    branches:
+      - main
+
+permissions:
+  # Need `contents: read` to checkout the repository.
+  # Need `contents: write` to update the step metadata.
+  contents: write
+
+jobs:
+  get_current_step:
+    name: Check current step number
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - id: get_step
+        run: echo "current_step=$(cat ./.github/steps/-step.txt)" >> $GITHUB_OUTPUT
+    outputs:
+      current_step: ${{ steps.get_step.outputs.current_step }}
+
+  on_copilot_hub:
+    name: On Copilot Hub Suggestion
+    needs: get_current_step
+
+    # We will only run this action when:
+    # 1. This repository isn't the template repository.
+    # 2. The current step is 3
+    if: ${{ !github.event.repository.is_template && needs.get_current_step.outputs.current_step == 3 }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Verify the learner added the member function
+      - name: Check member.js
+        uses: skills/action-check-file@v1
+        with:
+          file: "member.js"
+          search: "skillsMember"
+
+      # Update to the next step
+      - name: Update to step 4
+        uses: skills/action-update-step@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          from_step: 3
+          to_step: 4

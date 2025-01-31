@@ -1,0 +1,60 @@
+name: Step 1, Basic Completion
+
+# This step triggers after push to any JavaScript/TypeScript files
+# This workflow updates from step 1 to step 2.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".devcontainer/devcontainer.json"
+    branches:
+      - main
+
+permissions:
+  # Need `contents: read` to checkout the repository.
+  # Need `contents: write` to update the step metadata.
+  contents: write
+
+jobs:
+  get_current_step:
+    name: Check current step number
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - id: get_step
+        run: echo "current_step=$(cat ./.github/steps/-step.txt)" >> $GITHUB_OUTPUT
+    outputs:
+      current_step: ${{ steps.get_step.outputs.current_step }}
+
+  on_basic_completion:
+    name: On Basic Completion
+    needs: get_current_step
+
+    # We will only run this action when:
+    # 1. This repository isn't the template repository.
+    # 2. The current step is 1
+    if: ${{ !github.event.repository.is_template && needs.get_current_step.outputs.current_step == 1 }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Verify the learner added Copilot extension
+      - name: Check devcontainer setup
+        uses: skills/action-check-file@v1
+        with:
+          file: ".devcontainer/devcontainer.json"
+          search: "GitHub\\.copilot"
+
+      # Update to the next step
+      - name: Update to step 2
+        uses: skills/action-update-step@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          from_step: 1
+          to_step: 2

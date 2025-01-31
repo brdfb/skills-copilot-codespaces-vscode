@@ -1,0 +1,12 @@
+{
+  "name": "GitHub Copilot Workshop",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat"
+      ]
+    }
+  },
+  "postCreateCommand": "npm install"
+}
